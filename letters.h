@@ -15,20 +15,21 @@ struct Letter
 {
 	public:
 		char letter;
-		double width;
+		int width;
 		int arrLength;
 		Point points[10]
 		
-		Letter(char let, int arrLen, Point Points[10])
+		Letter(char let, int wid, int arrLen, Point Points[10])
 		{
 			letter = let;
+			width = wid;
 			points = Points;
 			arrLength = arrLen;
 		}
 };
 
 Letter letters[27] = [
-Letter("A", 5, [Point(0,0), ]),
+Letter("A", 7, [Point(0,0), ]),
 Letter("B", ),
 Letter("C", ),
 Letter("D", ),

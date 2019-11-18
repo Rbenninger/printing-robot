@@ -1,23 +1,3 @@
-/* example
-struct Point
-{
-	public:
-		int x;
-		int y;
-};
-
-struct Letter
-{
-	public:
-		char letter;
-		double width;
-		Point points[5];
-};
-
-ASCII values A=65 Z=90 .=46
-in array A=0 Z=25 .=26
-*/
-
 #include "PC_FileIO.c"
 
 const double PAGE_WIDTH = 21.59;
@@ -65,7 +45,8 @@ bool OnPaper()
 
 double SpaceLeft()
 {
-	
+	double moved = nMotorEncoder[X_MOTOR]*180*PI*SMALL_RADIUS;
+	return fabs(PAGE_WIDTH - moved);
 }
 
 double GetWidth(string word)
@@ -137,7 +118,7 @@ void AddLarge()
 
 bool NotSkew()
 {
-	return fabs(SensorValue[GYRO]) < TOL;
+	return fabs(getGyroDegrees(GYRO)) < TOL;
 }
 
 void PauseTimer(int current)
@@ -181,12 +162,42 @@ void NewLine()
 
 void RefillPaper()
 {
+	PauseTimer(time[T1]);
+	do
+	{
+		DisplayString(1, "Place on a new piece of paper and press enter");
+		PressEnter();
+	} while(!OnPaper());
 	
+	time1[T1] = 0;
 }
 
 bool StartUp()
 {
-	
+	istream fin = ("input.txt");
+	if (OpenFile(fin))
+	{
+		SensorType[TOUCH] = SensorEV3_Touch;
+		SensorType[GYRO] = SensorEV3_Gyro;
+		SensorType[COLOR] = SensorEV3_Color;
+		wait1Msec(50);
+		SensorMode[GYRO] = modeEV3Gyro_RateAndAngle;
+		SensorMode[COLOR] = modeEV3Color_Color;
+		wait1Msec(50);
+		
+		do
+		{
+			DisplayString(1, "Place on a piece of paper and press enter");
+			PressEnter();
+		} while(!OnPaper());
+		
+		resetGyro(GYRO);
+		time1[T1] = 0;
+		
+		return true;
+	}
+	else
+		return false;
 }
 
 void ShutDown()
@@ -243,5 +254,13 @@ int WriteWord(string word)
 
 task main()
 {
-
+	if (StartUp())
+	{
+		
+	}
+	else
+	{
+		DisplayString(1, "Problem opening file. Press enter to end program");
+	}
+	PressEnter();
 }
