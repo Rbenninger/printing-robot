@@ -25,6 +25,10 @@ const double SCALE = 0.5;
 const int SMALL = 1;
 const int LARGE = 3;
 const int NEW = 3;
+const int TOL = 5;
+const int WRITE_POWER = 5;
+const double BIG_RADIUS = 2.75;
+const double SMALL_RADIUS = 1;
 const tmotor Y_LEFT = motorA;
 const tmotor Y_RIGHT = motorD;
 const tmotor X_MOTOR = motorB;
@@ -83,32 +87,62 @@ double GetWidth(string word)
 			width += SMALL;
 	}
 	
-	return width;
-}
-
-void AddSmall()
-{
-	
-}
-
-void AddLarge()
-{
-	
-}
-
-bool NotSkew()
-{
-	
+	return width*SCALE;
 }
 
 void MovePen(Point loc)
 {
-	
+	int direction = 0;
+	if (loc.x != 0)
+	{
+		int curEnc = nMotorEncoder[X_MOTOR];
+		if (loc.x < 0)
+			direction = -1;
+		else
+			direction = 1;
+			
+		double EncLimit = fabs(loc.x*PI*SMALL_RADIUS/180);
+		
+		motor[X_MOTOR] = direction*WRITE_POWER;
+		while(fabs(curEnc - nMotorEncoder[X_MOTOR]) < EncLimit)
+		{}
+		motor[X_MOTOR] = 0;
+	}
+	if (loc.y != 0)
+	{
+		int curEnc = nMotorEncoder[Y_LEFT];
+		if (loc.y < 0)
+			direction = -1;
+		else
+			direction = 1;
+			
+		double EncLimit = fabs(loc.y*PI*BIG_RADIUS/180);
+			
+		motor[Y_LEFT] = motor[Y_RIGHT] = direction*WRITE_POWER;
+		while(fabs(curEnc - nMotorEncoder[Y_LEFT]) < EncLimit)
+		{}
+		motor[Y_LEFT] = motor[Y_RIGHT] = 0;
+	}
+}
+
+void AddSmall()
+{
+	MovePen(Point(SMALL, 0));
+}
+
+void AddLarge()
+{
+	MovePen(Point(LARGE, 0));
+}
+
+bool NotSkew()
+{
+	return fabs(SensorValue[GYRO]) < TOL;
 }
 
 void PauseTimer(int current)
 {
-	
+	totalTime += current;
 }
 
 void PenUp()
@@ -123,7 +157,10 @@ void PenDown()
 
 void PressEnter()
 {
-	
+	while(!getButtonPress(buttonCenter))
+	{}
+	while(getButtonPress(buttonCenter))
+	{}
 }
 
 void ResetArm()
@@ -177,12 +214,13 @@ void WriteLetter(char letter)
 	MovePen(letters[charIndex].points[0]);
 	PenDown();
 	
-	for (int curPoint = 1; curPoint < Letters[charIndex].arrLength; curPoint++)
+	for (int curPoint = 1; curPoint < Letters[charIndex].arrLength-1; curPoint++)
 	{
 		MovePen(Letters[charIndex].points[curPoint]);
 	}
 	
 	PenUp();
+	MovePen(letters[charIndex].points[letters[charIndex].arrLength-1]);
 }
 
 bool TooLong(string word)
