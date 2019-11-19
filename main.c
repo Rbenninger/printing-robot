@@ -1,10 +1,10 @@
 #include "PC_FileIO.c"
 
 const double PAGE_WIDTH = 21.59;
-const double SCALE = 0.5;
+const double SCALE = 0.15;
 const int SMALL = 1;
-const int LARGE = 3;
-const int NEW = 3;
+const int LARGE = 5;
+const int NEW = 5;
 const int TOL = 5;
 const int WRITE_POWER = 5;
 const double BIG_RADIUS = 2.75;
@@ -56,7 +56,7 @@ double GetWidth(string word)
 	for (int curChar = 0; curChar < strlen(word); curChar++)
 	{
 		int charIndex = -1;
-		if (word[curChar] = ".")
+		if (word[curChar] = '.')
 			charIndex = 26;
 		else if ((int)word[curChar] > 96 && (int)word[curChar] < 123) //lowercase
 			charIndex = (int)word[curChar] - 96;
@@ -215,7 +215,7 @@ void ShutDown()
 void WriteLetter(char letter)
 {
 	int charIndex = -1;
-	if (letter = ".")
+	if (letter = '.')
 		charIndex = 26;
 	else if ((int)letter > 96 && (int)letter < 123) //lowercase
 		charIndex = (int)letter - 96;
