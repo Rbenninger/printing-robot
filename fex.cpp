@@ -1,4 +1,11 @@
-struct Point
+#include <iostream>
+#include <cstdlib>
+
+using namespace std;
+
+int main()
+{
+	struct Point
 {
 	int x;
 	int y;
@@ -74,3 +81,20 @@ Letter letters[28] = {
 {'-', 1, 3,
 	{{0, 5}, {4, 0}, {0, -5}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}}}
 };
+
+	for (int i = 0; i < 28; i++)
+	{
+		cout << "letters[" << i << "].letter = '" << letters[i].letter << "';" << endl;
+		cout << "letters[" << i << "].width = " << letters[i].width << ";" << endl;
+		cout << "letters[" << i << "].arrLength = " << letters[i].arrLength << ";" << endl;
+		
+		for (int j = 0; j < 13; j++)
+		{
+			cout << "letters[" << i << "].points[" << j << "].x = " << letters[i].points[j].x << ";" << endl;
+			cout << "letters[" << i << "].points[" << j << "].y = " << letters[i].points[j].y << ";" << endl;
+		}
+	}
+	
+	system("PAUSE");
+	return EXIT_SUCCESS;
+}
