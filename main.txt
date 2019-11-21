@@ -1,20 +1,19 @@
 #include "PC_FileIO.c"
 #include "letters.c"
 
-const char* fileName = "test.txt";
-
+const string fileName = "test.txt";
 const float PAGE_WIDTH = 10; //cm
-const float SCALE = 0.15; //0.15; //10 units of points are equal to 1.5 cm
+const float SCALE = 0.15; //10 units of points are equal to 1.5 cm
 const int SMALL = 1; //small space between letters
 const int LARGE = 5; //large space between words
 const int NEW = 5; //space between lines
 const int TOL = 5; //robot can be up to 5deg skew
-const int WRITE_POWER = 5; //5; //writing speed
+const int WRITE_POWER = 5; //writing speed
 const float BIG_RADIUS = 2.75;
-const float SMALL_RADIUS = 0.5;
+const float SMALL_RADIUS = 1;
 const tMotor Y_LEFT = motorD;
-const tMotor Y_RIGHT = motorA;
-const tMotor X_MOTOR = motorB;
+const tMotor Y_RIGHT = motorB;
+const tMotor X_MOTOR = motorA;
 const tMotor Z_MOTOR = motorC;
 const tSensors COLOR = S1;
 const tSensors GYRO = S4;
@@ -30,10 +29,10 @@ int GetIndex(char letter) //returns index of letter in the array
 			return 26;
 		else if (letter == '-')
 			return 27;
-		else if (letter >= 'a' && letter <= 'z') //lowercase
-			return letter - 'a';
-		else if (letter >= 'A' && letter <= 'Z')
-			return letter - 'A';
+		else if ((int)letter > 96 && (int)letter < 123) //lowercase
+			return (int)letter - 96;
+		else if ((int)letter > 65 && (int)letter < 90)
+			return (int)letter - 65;
 		else
 			return -1;
 }
@@ -75,11 +74,11 @@ void MovePen(Point loc)//moves pen to a relative point
 	{
 		int curEnc = nMotorEncoder[X_MOTOR];
 		if (loc.x < 0)
-			direction = 1;
-		else
 			direction = -1;
+		else
+			direction = 1;
 
-		float EncLimit = abs((loc.x*SCALE*180)/(PI*SMALL_RADIUS));
+		float EncLimit = abs(loc.x*PI*SMALL_RADIUS/180);
 
 		motor[X_MOTOR] = direction*WRITE_POWER;
 		while(abs(curEnc - nMotorEncoder[X_MOTOR]) < EncLimit)
@@ -90,11 +89,11 @@ void MovePen(Point loc)//moves pen to a relative point
 	{
 		int curEnc = nMotorEncoder[Y_LEFT];
 		if (loc.y < 0)
-			direction = 1;
-		else
 			direction = -1;
+		else
+			direction = 1;
 
-		float EncLimit = fabs((loc.y*SCALE*180)/(PI*BIG_RADIUS));
+		float EncLimit = fabs(loc.y*PI*BIG_RADIUS/180);
 
 		motor[Y_LEFT] = motor[Y_RIGHT] = direction*WRITE_POWER;
 		while(abs(curEnc - nMotorEncoder[Y_LEFT]) < EncLimit)
@@ -132,9 +131,10 @@ void PauseTimer(int current) //adds the current time to the total
 void PenUp() //lifts pen off the page
 {
 	nMotorEncoder[Z_MOTOR] = 0;
-	motor[Z_MOTOR] = 30;
+	motor[Z_MOTOR] = -5;
 
-	wait1Msec(1000);
+	while (abs(nMotorEncoder[Z_MOTOR]) < 10)
+	{}
 
 	motor[Z_MOTOR] = 0;
 }
@@ -142,21 +142,20 @@ void PenUp() //lifts pen off the page
 void PenDown() //puts the pen on the page
 {
 	nMotorEncoder[Z_MOTOR] = 0;
-	motor[Z_MOTOR] = -30;
+	motor[Z_MOTOR] = 5;
 
-	wait1Msec(1500);
+	while (abs(nMotorEncoder[Z_MOTOR]) < 10)
+	{}
+
 	motor[Z_MOTOR] = 0;
 }
 
 void PressEnter() //waits for the user to press and release the enter button
 {
-	writeDebugStream("dbg: PressEnter() called\n");
 	while(!getButtonPress(buttonEnter))
 	{}
-  writeDebugStream("dbg: Button down\n");
 	while(getButtonPress(buttonEnter))
 	{}
-  writeDebugStream("dbg: Button released, PressEnter() end!\n");
 }
 
 void ResetArm() //moves the arm all the way to the left
@@ -260,10 +259,11 @@ int WriteWord() //writes a word
 	return length;
 }
 
-void getToWrite(char* strWord)
+void getToWrite(string strWord)
 {
+	int length = strlen(strWord);
 
-	for (int i = 0; i < strlen(strWord); i++)
+	for (int i = 0; i < length; i++)
 	{
 		toWrite[i] = strWord[i];
 	}
@@ -284,29 +284,25 @@ task main()
 		SensorMode[COLOR] = modeEV3Color_Color;
 		wait1Msec(50);
 
-	/*	do
+		do
 		{
 			displayString(1, "Place on a piece of paper and press enter");
 			PressEnter();
-		} while(!OnPaper()); */
+		} while(!OnPaper());
 
+		ResetArm();
 		nMotorEncoder[Y_LEFT] = 0;
 		nMotorEncoder[X_MOTOR] = 0;
 		resetGyro(GYRO);
 		totalTime = 0;
 		totalChar = 0;
 		getArr();
-		PenUp():
 		time1[T1] = 0;
 
-	  string strWord = "";
+		string strWord = "";
 		while (readTextPC(fin, strWord))
 		{
-			writeDebugStream("running while readTextPC...\n");
 			getToWrite(strWord);
-			string s1;
-			stringFromChars(s1, toWrite);
-			writeDebugStream("toWrite: %s\n", s1);
 			if (!NotSkew())
 			{
 				do
