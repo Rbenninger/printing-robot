@@ -4,9 +4,9 @@
 const char* fileName = "test.txt";
 
 const float PAGE_WIDTH = 10; //cm
-const float SCALE = 0.15; //0.15; //10 units of points are equal to 1.5 cm
-const int SMALL = 1; //small space between letters
-const int LARGE = 5; //large space between words
+const float SCALE = 0.2; //0.15; //10 units of points are equal to 1.5 cm
+const int SMALL = 3; //small space between letters
+const int LARGE = 10; //large space between words
 const int NEW = 5; //space between lines
 const int TOL = 5; //robot can be up to 5deg skew
 const int WRITE_POWER = 5; //5; //writing speed
@@ -18,7 +18,7 @@ const tMotor X_MOTOR = motorB;
 const tMotor Z_MOTOR = motorC;
 const tSensors COLOR = S1;
 const tSensors GYRO = S4;
-const tSensors TOUCH = S2;
+const tSensors TOUCH = S3;
 
 int totalChar;
 int totalTime;
@@ -41,6 +41,11 @@ int GetIndex(char letter) //returns index of letter in the array
 bool OnPaper() //checks to make sure the robot is on paper
 {
 	return SensorValue(COLOR) == (int)colorWhite;
+}
+
+bool NotHit() //checks to make sure the robot didn't hit anything
+{
+	return SensorValue(TOUCH) == 0;
 }
 
 float SpaceLeft() //returns the space left in a line in cm
@@ -70,6 +75,8 @@ float GetWidth() // gets the width of a word in cm
 
 void MovePen(Point loc)//moves pen to a relative point
 {
+	if (NotHit())
+	{
 	int direction = 0;
 	if (loc.x != 0)
 	{
@@ -100,6 +107,7 @@ void MovePen(Point loc)//moves pen to a relative point
 		while(abs(curEnc - nMotorEncoder[Y_LEFT]) < EncLimit)
 		{}
 		motor[Y_LEFT] = motor[Y_RIGHT] = 0;
+	}
 	}
 }
 
@@ -296,13 +304,21 @@ task main()
 		totalTime = 0;
 		totalChar = 0;
 		getArr();
-		PenUp():
+		PenUp();
 		time1[T1] = 0;
 
-	  string strWord = "";
+	/*	Point p1;
+		p1.x = 0;
+		p1.y = 20;
+		MovePen(p1);*/
+
+		string strWord = "TEST";
+		getToWrite(strWord);
+		WriteWord();
+
+	/*  string strWord = "";
 		while (readTextPC(fin, strWord))
 		{
-			writeDebugStream("running while readTextPC...\n");
 			getToWrite(strWord);
 			string s1;
 			stringFromChars(s1, toWrite);
@@ -311,7 +327,8 @@ task main()
 			{
 				do
 				{
-					displayString(1, "Align robot on paper and press enter");
+					displayString(1, "Align robot on paper");
+					displayString(2, "and press enter");
 					PressEnter();
 				} while (!OnPaper());
 				resetGyro(GYRO);
@@ -336,15 +353,16 @@ task main()
 			ResetArm();
 
 			displayString(1, "Printing complete");
-			displayString(2, "Total time: %f", totalTime/1000.0);
-			displayString(3, "Total number of characters: %d", totalChar);
+			displayString(2, "Time: %f", totalTime/1000.0);
+			displayString(3, "Characters: %d", totalChar); */
 
 			closeFilePC(fin);
 
 		}
 		else
 		{
-			displayString(1, "Problem opening file. Press enter to end program");
+			displayString(1, "Problem opening file.");
+			displayString(2, "Press enter to end program");
 		}
 		PressEnter();
 }
