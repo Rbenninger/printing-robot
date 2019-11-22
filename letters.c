@@ -27,7 +27,7 @@ struct Letter
 {'D', 6, 8,
 	{{0, 0}, {2, 0}, {0, 10}, {-2, 0}, {6, 0}, {0, -10}, {-4, 0}, {4, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}}},
 {'E', 6, 8,
-	{{6, 10}, {-6, 0}, {0, -5}, {3, 0}, {-3, 0}, {0, -5}, {6, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}}},
+	{{6, 10}, {-6, 0}, {0, -5}, {6, 0}, {-6, 0}, {0, -5}, {6, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}}},
 {'F', 6, 7,
 	{{0, 0}, {0, 5}, {4, 0}, {-4, 0}, {0, 5}, {6, 0}, {0, -10}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}}},
 {'G', 8, 7,
@@ -204,9 +204,9 @@ letters[4].points[1].x = -6;
 letters[4].points[1].y = 0;
 letters[4].points[2].x = 0;
 letters[4].points[2].y = -5;
-letters[4].points[3].x = 3;
+letters[4].points[3].x = 6;
 letters[4].points[3].y = 0;
-letters[4].points[4].x = -3;
+letters[4].points[4].x = -6;
 letters[4].points[4].y = 0;
 letters[4].points[5].x = 0;
 letters[4].points[5].y = -5;
@@ -225,7 +225,7 @@ letters[4].points[11].y = 0;
 letters[4].points[12].x = 0;
 letters[4].points[12].y = 0;
 letters[5].letter = 'F';
-letters[5].width = 6;
+letters[5].width = 5;
 letters[5].arrLength = 7;
 letters[5].points[0].x = 0;
 letters[5].points[0].y = 0;
@@ -237,7 +237,7 @@ letters[5].points[3].x = -4;
 letters[5].points[3].y = 0;
 letters[5].points[4].x = 0;
 letters[5].points[4].y = 5;
-letters[5].points[5].x = 6;
+letters[5].points[5].x = 5;
 letters[5].points[5].y = 0;
 letters[5].points[6].x = 0;
 letters[5].points[6].y = -10;
@@ -341,7 +341,7 @@ letters[8].points[11].y = 0;
 letters[8].points[12].x = 0;
 letters[8].points[12].y = 0;
 letters[9].letter = 'J';
-letters[9].width = 8;
+letters[9].width = 7;
 letters[9].arrLength = 6;
 letters[9].points[0].x = 0;
 letters[9].points[0].y = 0;
@@ -351,7 +351,7 @@ letters[9].points[2].x = 0;
 letters[9].points[2].y = 10;
 letters[9].points[3].x = -4;
 letters[9].points[3].y = 0;
-letters[9].points[4].x = 8;
+letters[9].points[4].x = 6;
 letters[9].points[4].y = 0;
 letters[9].points[5].x = 0;
 letters[9].points[5].y = -10;
