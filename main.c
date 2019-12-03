@@ -1,91 +1,92 @@
 #include "PC_FileIO.c"
+#include "letters.c"
 
-const double PAGE_WIDTH = 21.59;
-const double SCALE = 0.15;
-const int SMALL = 1;
-const int LARGE = 5;
-const int NEW = 5;
-const int TOL = 5;
-const int WRITE_POWER = 5;
-const double BIG_RADIUS = 2.75;
-const double SMALL_RADIUS = 1;
-const tmotor Y_LEFT = motorA;
-const tmotor Y_RIGHT = motorD;
-const tmotor X_MOTOR = motorB;
-const tmotor Z_MOTOR = motorC;
-const tsensor COLOR = S1;
-const tsensor GYRO = S2;
-const tsensor TOUCH = S3;
+const char* fileName = "test.txt";
 
-public int totalChar = 0;
-public int totalTime = 0;
+const float PAGE_WIDTH = 8.7; //cm
+const float SCALE = 0.15; //1 unit is equal to 0.15 cm
+const int SMALL = 1; //small space between letters
+const int LARGE = 4; //large space between words
+const int NEW = 25; //space between lines
+const int TOL = 15; //robot can be up to 5deg skew
+const int WRITE_POWER = 5; //5; //writing speed
+const float BIG_RADIUS = 2.75; //side wheels
+const float SMALL_RADIUS = 0.5; //arm wheel
 
-struct Point
+const tMotor Y_LEFT = motorD;
+const tMotor Y_RIGHT = motorA;
+const tMotor X_MOTOR = motorB;
+const tMotor Z_MOTOR = motorC;
+const tSensors COLOR = S1;
+const tSensors GYRO = S4;
+const tSensors TOUCH = S3;
+
+int GetIndex(char letter) //returns index of letter in the array
 {
-	public:
-		int x;
-		int y;
-		
-		Point (int x0, int y0)
-		{
-			x = x0;
-			y = y0;	
-		}	
-};
-
-bool OpenFile(istream fin)
-{
-	
+		if (letter == '.')
+			return 26;
+		else if (letter == '-')
+			return 27;
+		else if (letter >= 'a' && letter <= 'z') //lowercase
+			return letter - 'a';
+		else if (letter >= 'A' && letter <= 'Z')
+			return letter - 'A';
+		else
+			return -1;
 }
 
-bool OnPaper()
+bool OnPaper() //checks to make sure the robot is on paper
 {
 	return SensorValue(COLOR) == (int)colorWhite;
 }
 
-double SpaceLeft()
+bool NotHit() //checks to make sure the robot didn't hit anything
 {
-	double moved = nMotorEncoder[X_MOTOR]*180*PI*SMALL_RADIUS;
-	return fabs(PAGE_WIDTH - moved);
+	return SensorValue(TOUCH) == 0;
 }
 
-double GetWidth(string word)
+float SpaceLeft(float& cur) //returns the space left in a line in cm
 {
-	double width = 0;
-	
-	for (int curChar = 0; curChar < strlen(word); curChar++)
+	return PAGE_WIDTH - cur;
+}
+
+float GetWidth(char toWrite[20]) // gets the width of a word in cm
+{
+	float width = 0;
+
+	for (int curChar = 0; curChar < 20; curChar++)
 	{
-		int charIndex = -1;
-		if (word[curChar] = '.')
-			charIndex = 26;
-		else if ((int)word[curChar] > 96 && (int)word[curChar] < 123) //lowercase
-			charIndex = (int)word[curChar] - 96;
-		else
-			charIndex = (int)word[curChar] - 65;
-			
-		width += letters[charIndex].width;
-		if (curChar != strlen(word) -1)
-			width += SMALL;
+		int charIndex = GetIndex(toWrite[curChar]);
+
+		if (charIndex != -1)
+		{
+			width += letters[charIndex].width;
+			if (curChar != 20 -1)
+			{width += SMALL;}
+		}
 	}
-	
+
 	return width*SCALE;
 }
 
-void MovePen(Point loc)
+void MovePen(Point loc)//moves pen to a relative point
 {
+	while(!NotHit())
+	{}
+
 	int direction = 0;
 	if (loc.x != 0)
 	{
 		int curEnc = nMotorEncoder[X_MOTOR];
 		if (loc.x < 0)
-			direction = -1;
+		{direction = 1;}
 		else
-			direction = 1;
-			
-		double EncLimit = fabs(loc.x*PI*SMALL_RADIUS/180);
-		
+		{direction = -1;}
+
+		float EncLimit = abs((loc.x*SCALE*180)/(PI*SMALL_RADIUS));
+
 		motor[X_MOTOR] = direction*WRITE_POWER;
-		while(fabs(curEnc - nMotorEncoder[X_MOTOR]) < EncLimit)
+		while(abs(curEnc - nMotorEncoder[X_MOTOR]) < EncLimit)
 		{}
 		motor[X_MOTOR] = 0;
 	}
@@ -93,174 +94,306 @@ void MovePen(Point loc)
 	{
 		int curEnc = nMotorEncoder[Y_LEFT];
 		if (loc.y < 0)
-			direction = -1;
+		{direction = 1;}
 		else
-			direction = 1;
-			
-		double EncLimit = fabs(loc.y*PI*BIG_RADIUS/180);
-			
+		{direction = -1;}
+
+		float EncLimit = fabs((loc.y*SCALE*180)/(PI*BIG_RADIUS));
+
 		motor[Y_LEFT] = motor[Y_RIGHT] = direction*WRITE_POWER;
-		while(fabs(curEnc - nMotorEncoder[Y_LEFT]) < EncLimit)
+		while(abs(curEnc - nMotorEncoder[Y_LEFT]) < EncLimit)
 		{}
 		motor[Y_LEFT] = motor[Y_RIGHT] = 0;
 	}
 }
 
-void AddSmall()
+void AddSmall() //adds a small space between letters
 {
-	MovePen(Point(SMALL, 0));
+	Point small;
+	small.x = SMALL;
+	small.y = 0;
+	MovePen(small);
 }
 
-void AddLarge()
+void AddLarge() //adds a large space between words
 {
-	MovePen(Point(LARGE, 0));
+	Point large;
+	large.x = LARGE;
+	large.y = 0;
+	MovePen(large);
 }
 
-bool NotSkew()
+bool NotSkew() //checks to make sure the robot is aligned
 {
-	return fabs(getGyroDegrees(GYRO)) < TOL;
+	return abs(getGyroDegrees(GYRO)) < TOL;
 }
 
-void PauseTimer(int current)
+void PauseTimer(int current, int& totalTime) //adds the current time to the total
 {
 	totalTime += current;
 }
 
-void PenUp()
+void PenUp() //lifts pen off the page
 {
-	
+	nMotorEncoder[Z_MOTOR] = 0;
+	motor[Z_MOTOR] = 30;
+
+	wait1Msec(1000);
+
+	motor[Z_MOTOR] = 0;
 }
 
-void PenDown()
+void PenDown() //puts the pen on the page
 {
-	
+	nMotorEncoder[Z_MOTOR] = 0;
+	motor[Z_MOTOR] = -30;
+
+	wait1Msec(1000);
+	motor[Z_MOTOR] = 0;
 }
 
-void PressEnter()
+void Alert()
 {
-	while(!getButtonPress(buttonCenter))
+	setSoundVolume(50);
+	playTone(695, 60);
+}
+
+void PressEnter() //waits for the user to press and release the enter button
+{
+	Alert();
+	while(!getButtonPress(buttonEnter))
 	{}
-	while(getButtonPress(buttonCenter))
+	while(getButtonPress(buttonEnter))
 	{}
 }
 
-void ResetArm()
+void ResetArm() //moves the arm all the way to the left
 {
-	motor[X_MOTOR] = 30;
-	while (SensorValue[TOUCH] == 0)
+	motor[X_MOTOR] = 10;
+	while (abs(nMotorEncoder[X_MOTOR]) > 0)
 	{}
+	wait1Msec(500);
+
 	motor[X_MOTOR] = 0;
-	
-	nMotorEncoder[X_MOTOR] = 0;
 }
 
-void NewLine()
+void NewLine(float& cur) //resets the arm and moves down a line
 {
 	ResetArm();
-	MovePen(Point(0,-NEW));
+	Point new;
+	new.x = 0;
+	new.y = -NEW;
+	MovePen(new);
+	cur = 0;
 }
 
-void RefillPaper()
+void RefillPaper(float& cur, int& totalTime) //handles event when the robot reaches the end of the page
 {
-	PauseTimer(time[T1]);
+	PauseTimer(time1[T1], totalTime);
 	do
 	{
-		DisplayString(1, "Place on a new piece of paper and press enter");
+		eraseDisplay();
+		displayString(1, "Place on a new piece of paper and press enter");
 		PressEnter();
 	} while(!OnPaper());
-	
+
+	eraseDisplay();
+	ResetArm();
+	cur = 0;
 	time1[T1] = 0;
 }
 
-bool StartUp()
+void WriteLetter(char letter) //follows the path for a letter
 {
-	istream fin = ("input.txt");
-	if (OpenFile(fin))
+	int charIndex = GetIndex(letter);
+
+	if (charIndex != -1)
 	{
-		SensorType[TOUCH] = SensorEV3_Touch;
-		SensorType[GYRO] = SensorEV3_Gyro;
-		SensorType[COLOR] = SensorEV3_Color;
-		wait1Msec(50);
-		SensorMode[GYRO] = modeEV3Gyro_RateAndAngle;
-		SensorMode[COLOR] = modeEV3Color_Color;
-		wait1Msec(50);
-		
-		do
+		MovePen(letters[charIndex].points[0]);
+		PenDown();
+
+		for (int curPoint = 1; curPoint < letters[charIndex].arrLength-1; curPoint++)
 		{
-			DisplayString(1, "Place on a piece of paper and press enter");
-			PressEnter();
-		} while(!OnPaper());
-		
-		resetGyro(GYRO);
-		time1[T1] = 0;
-		
-		return true;
+			MovePen(letters[charIndex].points[curPoint]);
+			wait1Msec(300);
+		}
+
+		PenUp();
+		MovePen(letters[charIndex].points[letters[charIndex].arrLength-1]);
 	}
-	else
-		return false;
 }
 
-void ShutDown()
+bool TooLong(char toWrite[20]) //checks to see if the word needs to be split
 {
-	PauseTimer(time1[T1]);
-	ResetArm();
-	
-	DisplayString(1, "Total time: %f", totalTime/1000);
-	DisplayString(2, "Total number of characters: %d", totalChar);
-	
-	PressEnter();
-	//TODO: close file
+	return GetWidth(toWrite) > PAGE_WIDTH;
 }
 
-void WriteLetter(char letter)
+int WriteLongWord(float& cur, char toWrite[20]) //adds hyphens where needed while writing a word
 {
-	int charIndex = -1;
-	if (letter = '.')
-		charIndex = 26;
-	else if ((int)letter > 96 && (int)letter < 123) //lowercase
-		charIndex = (int)letter - 96;
-	else
-		charIndex = (int)letter - 65;
-		
-	MovePen(letters[charIndex].points[0]);
-	PenDown();
-	
-	for (int curPoint = 1; curPoint < Letters[charIndex].arrLength-1; curPoint++)
+	int wordLength = 0;
+	for (int character = 0; character < 19; character++)
 	{
-		MovePen(Letters[charIndex].points[curPoint]);
+		if (GetIndex(toWrite[character]) != -1 && GetIndex(toWrite[character+1]) == -1)
+		{wordLength = character+1;}
 	}
-	
-	PenUp();
-	MovePen(letters[charIndex].points[letters[charIndex].arrLength-1]);
-}
 
-bool TooLong(string word)
-{
-	return GetWidth(word) > PAGE_WIDTH;
-}
-
-int WriteWord(string word)
-{
-	for (int charIndex = 0; charIndex < strlen(word); char++)
+	int length = 0;
+	for (int curChar = 0; curChar < wordLength; curChar++)
 	{
-		WriteLetter(word[charIndex]);
-		if (charIndex != strlen(word)-1)
+		int charIndex = GetIndex(toWrite[curChar]);
+
+		float width = (SMALL + letters[charIndex].width + letters[27].width)*SCALE;
+
+		if (SpaceLeft(cur) < width && curChar != wordLength-1)
+		{
+			WriteLetter('-');
+
+			if (!OnPaper())
+				{RefillPaper(cur), totalTime;}
+			else
+				{NewLine(cur);}
+
+			WriteLetter(toWrite[curChar]);
 			AddSmall();
+			length += 2;
+		}
+		else
+		{
+			WriteLetter(toWrite[curChar]);
+			if (curChar != wordLength-1)
+				{AddSmall();}
+			length++;
+		}
+
+		cur += width;
+	}
+
+	return length;
+}
+
+int WriteWord(char toWrite[20]) //writes a word
+{
+	int wordLength = 0;
+	for (int character = 0; character < 19; character++)
+	{
+		if (GetIndex(toWrite[character]) != -1 && GetIndex(toWrite[character+1]) == -1)
+		{wordLength = character+1;}
+	}
+
+	for (int curChar = 0; curChar < wordLength; curChar++)
+	{
+		WriteLetter(toWrite[curChar]);
+		if (curChar != 19)
+		{AddSmall();}
 	}
 	AddLarge();
-	
-	return word.length;
+
+	return wordLength;
+}
+
+void getToWrite(char* strWord, char toWrite[20])
+{
+	for (int i  = 0; i < 20; i++) //resetting array
+	{
+		toWrite[i] = '&';
+	}
+
+	for (int i = 0; i < strlen(strWord); i++)
+	{
+		toWrite[i] = strWord[i];
+	}
 }
 
 task main()
 {
-	if (StartUp())
-	{
-		
-	}
-	else
-	{
-		DisplayString(1, "Problem opening file. Press enter to end program");
-	}
-	PressEnter();
+		TFileHandle fin;
+		bool fileOkay = openReadPC(fin, fileName);
+
+		if (fileOkay)
+		{
+		SensorType[TOUCH] = sensorEV3_Touch;
+		SensorType[GYRO] = sensorEV3_Gyro;
+		SensorType[COLOR] = sensorEV3_Color;
+		wait1Msec(50);
+		SensorMode[GYRO] = modeEV3Gyro_RateAndAngle;
+		SensorMode[COLOR] = modeEV3Color_Color;
+		wait1Msec(50);
+
+		do
+		{
+			displayString(1, "Place on a piece of paper");
+			displayString(2, "and press enter");
+			PressEnter();
+		} while(!OnPaper());
+		eraseDisplay();
+		displayString(1, "Printing in progress");
+
+		nMotorEncoder[Y_LEFT] = 0;
+		nMotorEncoder[X_MOTOR] = 0;
+		resetGyro(GYRO);
+		int totalTime = 0;
+		int totalChar = 0;
+		getArr();
+		PenUp();
+		float cur = 0;
+		time1[T1] = 0;
+		char toWrite[20];
+
+	    string strWord = "";
+		while (readTextPC(fin, strWord))
+		{
+			getToWrite(strWord, toWrite);
+			if (!NotSkew())
+			{
+				PauseTimer(time1[T1], totalTime);
+				do
+				{
+					eraseDisplay();
+					displayString(1, "Align robot on paper");
+					displayString(2, "and press enter");
+					PressEnter();
+				} while (!OnPaper());
+				resetGyro(GYRO);
+				eraseDisplay();
+				displayString(1, "Printing in progress");
+			}
+
+			float spaceleft = SpaceLeft(cur);
+			float width = GetWidth(toWrite);
+
+			displayString(1, "Printing in progress");
+
+			if (width > spaceleft && !TooLong(toWrite)) //not enough space left on the current line
+			{
+				if (!OnPaper())
+				{RefillPaper(cur, totalTime);}
+				else
+				{NewLine(cur);}
+			}
+
+			if (TooLong(toWrite))
+			{totalChar += WriteLongWord(cur, toWrite);}
+			else
+			{totalChar += WriteWord(toWrite);}
+
+			cur += width + LARGE;
+		}
+
+			PauseTimer(time1[T1], totalTime);
+			ResetArm();
+
+			eraseDisplay();
+			displayString(1, "Printing complete");
+			displayString(2, "Time: %f", totalTime/1000.0);
+			displayString(3, "Characters: %d", totalChar);
+
+			closeFilePC(fin);
+
+		}
+		else
+		{
+			displayString(1, "Problem opening file.");
+			displayString(2, "Press enter to end program");
+		}
+		PressEnter();
 }
