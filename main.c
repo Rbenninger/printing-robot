@@ -4,14 +4,15 @@
 const char* fileName = "test.txt";
 
 const float PAGE_WIDTH = 8.7; //cm
-const float SCALE = 0.15; //0.15; //10 units of points are equal to 1.5 cm
+const float SCALE = 0.15; //1 unit is equal to 0.15 cm
 const int SMALL = 1; //small space between letters
 const int LARGE = 4; //large space between words
 const int NEW = 25; //space between lines
 const int TOL = 15; //robot can be up to 5deg skew
 const int WRITE_POWER = 5; //5; //writing speed
-const float BIG_RADIUS = 2.75;
-const float SMALL_RADIUS = 0.5;
+const float BIG_RADIUS = 2.75; //side wheels
+const float SMALL_RADIUS = 0.5; //arm wheel
+
 const tMotor Y_LEFT = motorD;
 const tMotor Y_RIGHT = motorA;
 const tMotor X_MOTOR = motorB;
@@ -19,9 +20,6 @@ const tMotor Z_MOTOR = motorC;
 const tSensors COLOR = S1;
 const tSensors GYRO = S4;
 const tSensors TOUCH = S3;
-
-int totalTime;
-char toWrite[20];
 
 int GetIndex(char letter) //returns index of letter in the array
 {
@@ -52,7 +50,7 @@ float SpaceLeft(float& cur) //returns the space left in a line in cm
 	return PAGE_WIDTH - cur;
 }
 
-float GetWidth() // gets the width of a word in cm
+float GetWidth(char toWrite[20]) // gets the width of a word in cm
 {
 	float width = 0;
 
@@ -130,7 +128,7 @@ bool NotSkew() //checks to make sure the robot is aligned
 	return abs(getGyroDegrees(GYRO)) < TOL;
 }
 
-void PauseTimer(int current) //adds the current time to the total
+void PauseTimer(int current, int& totalTime) //adds the current time to the total
 {
 	totalTime += current;
 }
@@ -189,9 +187,9 @@ void NewLine(float& cur) //resets the arm and moves down a line
 	cur = 0;
 }
 
-void RefillPaper(float& cur) //handles event when the robot reaches the end of the page
+void RefillPaper(float& cur, int& totalTime) //handles event when the robot reaches the end of the page
 {
-	PauseTimer(time1[T1]);
+	PauseTimer(time1[T1], totalTime);
 	do
 	{
 		eraseDisplay();
@@ -225,12 +223,12 @@ void WriteLetter(char letter) //follows the path for a letter
 	}
 }
 
-bool TooLong() //checks to see if the word needs to be split
+bool TooLong(char toWrite[20]) //checks to see if the word needs to be split
 {
-	return GetWidth() > PAGE_WIDTH;
+	return GetWidth(toWrite) > PAGE_WIDTH;
 }
 
-int WriteLongWord(float& cur) //adds hyphens where needed while writing a word
+int WriteLongWord(float& cur, char toWrite[20]) //adds hyphens where needed while writing a word
 {
 	int wordLength = 0;
 	for (int character = 0; character < 19; character++)
@@ -238,9 +236,6 @@ int WriteLongWord(float& cur) //adds hyphens where needed while writing a word
 		if (GetIndex(toWrite[character]) != -1 && GetIndex(toWrite[character+1]) == -1)
 		{wordLength = character+1;}
 	}
-
-//	displayString(3, "long word");
-	//PressEnter();
 
 	int length = 0;
 	for (int curChar = 0; curChar < wordLength; curChar++)
@@ -254,7 +249,7 @@ int WriteLongWord(float& cur) //adds hyphens where needed while writing a word
 			WriteLetter('-');
 
 			if (!OnPaper())
-				{RefillPaper(cur);}
+				{RefillPaper(cur), totalTime;}
 			else
 				{NewLine(cur);}
 
@@ -276,7 +271,7 @@ int WriteLongWord(float& cur) //adds hyphens where needed while writing a word
 	return length;
 }
 
-int WriteWord() //writes a word
+int WriteWord(char toWrite[20]) //writes a word
 {
 	int wordLength = 0;
 	for (int character = 0; character < 19; character++)
@@ -285,20 +280,18 @@ int WriteWord() //writes a word
 		{wordLength = character+1;}
 	}
 
-	int length = 0;
 	for (int curChar = 0; curChar < wordLength; curChar++)
 	{
 		WriteLetter(toWrite[curChar]);
 		if (curChar != 19)
 		{AddSmall();}
-		length++;
 	}
 	AddLarge();
 
-	return length;
+	return wordLength;
 }
 
-void getToWrite(char* strWord)
+void getToWrite(char* strWord, char toWrite[20])
 {
 	for (int i  = 0; i < 20; i++) //resetting array
 	{
@@ -338,19 +331,21 @@ task main()
 		nMotorEncoder[Y_LEFT] = 0;
 		nMotorEncoder[X_MOTOR] = 0;
 		resetGyro(GYRO);
-		totalTime = 0;
+		int totalTime = 0;
 		int totalChar = 0;
 		getArr();
 		PenUp();
 		float cur = 0;
 		time1[T1] = 0;
+		char toWrite[20];
 
-	  string strWord = "";
+	    string strWord = "";
 		while (readTextPC(fin, strWord))
 		{
-			getToWrite(strWord);
+			getToWrite(strWord, toWrite);
 			if (!NotSkew())
 			{
+				PauseTimer(time1[T1], totalTime);
 				do
 				{
 					eraseDisplay();
@@ -364,27 +359,27 @@ task main()
 			}
 
 			float spaceleft = SpaceLeft(cur);
-			float width = GetWidth();
+			float width = GetWidth(toWrite);
 
 			displayString(1, "Printing in progress");
 
-			if (width > spaceleft && !TooLong()) //not enough space left on the current line
+			if (width > spaceleft && !TooLong(toWrite)) //not enough space left on the current line
 			{
 				if (!OnPaper())
-				{RefillPaper(cur);}
+				{RefillPaper(cur, totalTime);}
 				else
 				{NewLine(cur);}
 			}
 
-			if (TooLong())
-			{totalChar += WriteLongWord(cur);}
+			if (TooLong(toWrite))
+			{totalChar += WriteLongWord(cur, toWrite);}
 			else
-			{totalChar += WriteWord();}
+			{totalChar += WriteWord(toWrite);}
 
 			cur += width + LARGE;
 		}
 
-			PauseTimer(time1[T1]);
+			PauseTimer(time1[T1], totalTime);
 			ResetArm();
 
 			eraseDisplay();

@@ -1,3 +1,6 @@
+//This code was used to generate code to be pasted into the robotC program
+//The reason for this is that initializing structs in c++ is easier then robotC
+
 #include <iostream>
 #include <cstdlib>
 
@@ -19,7 +22,6 @@ struct Letter
 		Point points[13]; //each point is a command given to the move pen function. Each point is relative to the last one.
 };
 
-//I am aware this array looks awful.
 //The first point is where the pen will move before touching the page
 //The pen will lift up after moving to the point at index arrlength - 2
 //the point at index arrlength - 1 is where the pen will go to get to the bottom right corner of the letter
@@ -98,3 +100,5 @@ Letter letters[28] = {
 	system("PAUSE");
 	return EXIT_SUCCESS;
 }
+
+//output is omitted because it is over 800 lines. It was copied into the program letters.c
